@@ -27,9 +27,9 @@ const playerNames = [
 
 // Event 1: January 16, 2026 - All 20 players participated
 // UPDATED with corrected stats
-const event1Stats: Record<string, { v: number; d: number; b: number; t: number }> = {
+const event1Stats: Record<string, { v: number; d: number; b: number; t: number } | null> = {
   'Albatros': { v: 8, d: 2, b: 25, t: 25 },
-  'Bagheera': { v: 3, d: 0, b: 0, t: 0 },  // Not clear in photo, assuming 3 pts for attendance
+  'Bagheera': null,
   'Bogey': { v: 4, d: 6, b: 16, t: 18 },
   'Captain': { v: 9, d: 1, b: 40, t: 29 },
   'Cobra Kai': { v: 8, d: 2, b: 26, t: 22 },
@@ -37,7 +37,7 @@ const event1Stats: Record<string, { v: number; d: number; b: number; t: number }
   'Grizzly': { v: 1, d: 9, b: 10, t: 19 },  // UPDATED: 10 bulls, 19 triples
   'Hitman': { v: 3, d: 7, b: 24, t: 10 },
   'Joker': { v: 4, d: 6, b: 18, t: 20 },  // UPDATED: 18 bulls
-  'Maverick': { v: 3, d: 0, b: 0, t: 0 },
+  'Maverick': null,
   'Maxson Dart': { v: 0, d: 10, b: 13, t: 12 },  // UPDATED: 10 losses, 13 bulls, 12 triples
   'Moneymaker': { v: 6, d: 4, b: 23, t: 18 },
   'Phoenix': { v: 5, d: 5, b: 18, t: 19 },
@@ -47,7 +47,7 @@ const event1Stats: Record<string, { v: number; d: number; b: number; t: number }
   'Steelman': { v: 6, d: 4, b: 24, t: 21 },
   'Tank': { v: 9, d: 1, b: 30, t: 22 },
   'Thunder': { v: 7, d: 3, b: 38, t: 17 },
-  'Venom': { v: 3, d: 0, b: 0, t: 0 }
+  'Venom': null
 };
 
 // Event 2: February 6, 2026 - 16 players participated
@@ -115,7 +115,7 @@ export async function seed() {
     // Parse date as local time at 7:00 PM EST
     const [year, month, day] = eventData.date.split('-').map(Number);
     const eventDate = new Date(year, month - 1, day, 19, 0, 0);
-    
+
     const [event] = await db.insert(events).values({
       type: eventData.type as 'saison-solo' | 'saison-equipe' | 'tournois-solo' | 'tournois-equipe' | 'celebration',
       date: eventDate,
@@ -135,15 +135,28 @@ export async function seed() {
     const playerId = createdPlayers[playerName];
     if (!playerId) continue;
 
-    await db.insert(stats).values({
-      playerId,
-      eventId: event1.id,
-      points: statData.v, // Each victory = 1 point
-      wins: statData.v,
-      losses: statData.d,
-      bullseyes: statData.b,
-      triples: statData.t,
-    });
+    if (statData === null) {
+      // Player was absent - 3 points
+      await db.insert(stats).values({
+        playerId,
+        eventId: event1.id,
+        points: 3,
+        wins: 0,
+        losses: 0,
+        bullseyes: 0,
+        triples: 0,
+      });
+    } else {
+      await db.insert(stats).values({
+        playerId,
+        eventId: event1.id,
+        points: statData.v,
+        wins: statData.v,
+        losses: statData.d,
+        bullseyes: statData.b,
+        triples: statData.t,
+      });
+    }
   }
 
   // Create stats for Event 2

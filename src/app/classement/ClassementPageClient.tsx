@@ -58,12 +58,23 @@ export default function ClassementPageClient({ seasons, currentSeason, rankings 
     return [...rankings].sort((a, b) => {
       let aValue: number | string = a[sortField] ?? 0;
       let bValue: number | string = b[sortField] ?? 0;
-      
+
       if (sortField === "playerName") {
         aValue = a.playerName;
         bValue = b.playerName;
       }
-      
+
+      if (sortField === "totalPoints") {
+        if (a["totalPoints"] === b["totalPoints"]) {
+          aValue = a["totalBullseyes"] || 0;
+          bValue = b["totalBullseyes"] || 0;
+          if (aValue === bValue) {
+            aValue = a["totalTriples"] || 0;
+            bValue = b["totalTriples"] || 0;
+          }
+        }
+      }
+
       if (sortDirection === "asc") {
         return aValue > bValue ? 1 : -1;
       } else {
@@ -168,15 +179,14 @@ export default function ClassementPageClient({ seasons, currentSeason, rankings 
                   <TableRow key={player.playerId} className="hover:bg-slate-50">
                     <TableCell className="text-center">
                       <span
-                        className={`inline-flex w-8 h-8 items-center justify-center rounded-full font-bold text-sm ${
-                          index === 0
+                        className={`inline-flex w-8 h-8 items-center justify-center rounded-full font-bold text-sm ${index === 0
                             ? "bg-yellow-400 text-yellow-900"
                             : index === 1
-                            ? "bg-gray-300 text-gray-700"
-                            : index === 2
-                            ? "bg-orange-400 text-orange-900"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
+                              ? "bg-gray-300 text-gray-700"
+                              : index === 2
+                                ? "bg-orange-400 text-orange-900"
+                                : "bg-slate-100 text-slate-600"
+                          }`}
                       >
                         {index + 1}
                       </span>
