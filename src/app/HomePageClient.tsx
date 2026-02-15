@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Trophy, Calendar, Users, Target, TrendingUp, Award, Clock, ArrowRight, PartyPopper } from "lucide-react";
+import { Trophy, Calendar, Users, Target, TrendingUp, Award } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface Event {
   id: number;
@@ -42,50 +40,10 @@ interface HomePageClientProps {
   lastEvent: Event | null;
 }
 
-const eventTypeLabels: Record<string, { label: string; color: string }> = {
-  "saison-solo": { label: "Saison Solo", color: "bg-ldl-red" },
-  "saison-equipe": { label: "Saison Équipe", color: "bg-ldl-navy" },
-  "tournois-solo": { label: "Tournoi Solo", color: "bg-ldl-green" },
-  "tournois-equipe": { label: "Tournoi Équipe", color: "bg-ldl-gold" },
-  "celebration": { label: "Célébration", color: "bg-purple-600" },
-};
-
-function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("fr-FR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
-}
-
-function formatTimeRemaining(targetDate: Date): string {
-  const now = new Date();
-  const diff = new Date(targetDate).getTime() - now.getTime();
-
-  if (diff <= 0) return "En cours !";
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (days > 0) {
-    return `${days}j ${hours}h ${minutes}m`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
-  }
-}
-
 export default function HomePageClient({
   topPoints,
   topBullseyes,
   topTriples,
-  nextEvent,
-  lastEvent
 }: HomePageClientProps) {
   // Simple, compact widgets: Last Event and Next Event
   const quickLinks = [
@@ -112,11 +70,6 @@ export default function HomePageClient({
     },
   ];
 
-  const nextEventType = nextEvent ? eventTypeLabels[nextEvent.type] : null;
-  const lastEventType = lastEvent ? eventTypeLabels[lastEvent.type] : null;
-  const lastEventDate = lastEvent ? new Date(lastEvent.date) : null;
-  const nextEventDate = nextEvent ? new Date(nextEvent.date) : null;
-  const short = (d: Date | null) => d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
@@ -156,10 +109,10 @@ export default function HomePageClient({
                     <div className="flex items-center gap-3">
                       <span
                         className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0
-                            ? "bg-yellow-400 text-yellow-900"
-                            : index === 1
-                              ? "bg-gray-300 text-gray-700"
-                              : "bg-orange-400 text-orange-900"
+                          ? "bg-yellow-400 text-yellow-900"
+                          : index === 1
+                            ? "bg-gray-300 text-gray-700"
+                            : "bg-orange-400 text-orange-900"
                           }`}
                       >
                         {index + 1}
@@ -196,10 +149,10 @@ export default function HomePageClient({
                     <div className="flex items-center gap-3">
                       <span
                         className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0
-                            ? "bg-yellow-400 text-yellow-900"
-                            : index === 1
-                              ? "bg-gray-300 text-gray-700"
-                              : "bg-orange-400 text-orange-900"
+                          ? "bg-yellow-400 text-yellow-900"
+                          : index === 1
+                            ? "bg-gray-300 text-gray-700"
+                            : "bg-orange-400 text-orange-900"
                           }`}
                       >
                         {index + 1}
@@ -236,10 +189,10 @@ export default function HomePageClient({
                     <div className="flex items-center gap-3">
                       <span
                         className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0
-                            ? "bg-yellow-400 text-yellow-900"
-                            : index === 1
-                              ? "bg-gray-300 text-gray-700"
-                              : "bg-orange-400 text-orange-900"
+                          ? "bg-yellow-400 text-yellow-900"
+                          : index === 1
+                            ? "bg-gray-300 text-gray-700"
+                            : "bg-orange-400 text-orange-900"
                           }`}
                       >
                         {index + 1}
