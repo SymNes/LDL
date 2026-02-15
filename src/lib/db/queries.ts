@@ -1,6 +1,6 @@
 import { db } from "./index";
 import { players, events, stats } from "./schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export async function getTopPlayersByPoints(limit: number = 3) {
   const result = await db

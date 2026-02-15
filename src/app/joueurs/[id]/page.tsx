@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, User, TrendingUp, Target, Award, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -60,9 +61,11 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           <div className="w-32 h-32 rounded-full bg-gradient-to-br from-ldl-red to-red-600 flex items-center justify-center shadow-xl">
             {player.photoUrl ? (
-              <img
+              <Image
                 src={player.photoUrl}
                 alt={player.name}
+                width={128}
+                height={128}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (

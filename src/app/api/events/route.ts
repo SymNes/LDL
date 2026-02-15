@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const allEvents = await db.select().from(events).orderBy(desc(events.date));
     return NextResponse.json(allEvents);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch events" },
       { status: 500 }
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(newEvent, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to create event" },
       { status: 500 }

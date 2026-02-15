@@ -54,7 +54,7 @@ export default function NewEventPage() {
         const data = await response.json();
         setError(data.error || "Une erreur est survenue");
       }
-    } catch (err) {
+    } catch {
       setError("Erreur de connexion");
     } finally {
       setLoading(false);

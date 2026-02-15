@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Users, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAllPlayers } from "@/lib/db/queries";
@@ -23,9 +24,11 @@ export default async function JoueursPage() {
                 <div className="flex flex-col items-center text-center">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-ldl-red to-red-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                     {player.photoUrl ? (
-                      <img
+                      <Image
                         src={player.photoUrl}
                         alt={player.name}
+                        width={80}
+                        height={80}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (

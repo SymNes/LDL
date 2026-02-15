@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const allStats = await db.select().from(stats);
     return NextResponse.json(allStats);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch stats" },
       { status: 500 }
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(newStat, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to create stats" },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { Calendar, Trophy, Users, PartyPopper } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { getAllEvents, getAllSeasons } from "@/lib/db/queries";
 
 const eventTypeLabels: Record<string, { label: string; icon: typeof Trophy; color: string }> = {

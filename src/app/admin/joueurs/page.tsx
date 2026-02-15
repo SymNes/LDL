@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Users, Plus, Edit, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getAllPlayers } from "@/lib/db/queries";
 

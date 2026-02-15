@@ -111,7 +111,7 @@ export async function seed() {
   const createdEvents = [];
   for (const eventData of allEvents) {
     const [event] = await db.insert(events).values({
-      type: eventData.type as any,
+      type: eventData.type as 'saison-solo' | 'saison-equipe' | 'tournois-solo' | 'tournois-equipe' | 'celebration',
       date: new Date(eventData.date),
       season: '2024-2025',
       description: eventData.description,

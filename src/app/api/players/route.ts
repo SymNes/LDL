@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const allPlayers = await db.select().from(players).orderBy(players.name);
     return NextResponse.json(allPlayers);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch players" },
       { status: 500 }
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(newPlayer, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to create player" },
       { status: 500 }
