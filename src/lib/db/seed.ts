@@ -25,44 +25,46 @@ const playerNames = [
   'Venom'
 ];
 
-// Event 1: January 16, 2025 - All 20 players participated
+// Event 1: January 16, 2026 - All 20 players participated
+// UPDATED with corrected stats
 const event1Stats: Record<string, { v: number; d: number; b: number; t: number }> = {
   'Albatros': { v: 8, d: 2, b: 25, t: 25 },
   'Bagheera': { v: 3, d: 0, b: 0, t: 0 },  // Not clear in photo, assuming 3 pts for attendance
   'Bogey': { v: 4, d: 6, b: 16, t: 18 },
   'Captain': { v: 9, d: 1, b: 40, t: 29 },
   'Cobra Kai': { v: 8, d: 2, b: 26, t: 22 },
-  'Dart Gangster': { v: 1, d: 9, b: 14, t: 4 },
-  'Grizzly': { v: 1, d: 9, b: 6, t: 14 },
+  'Dart Gangster': { v: 1, d: 9, b: 14, t: 9 },  // UPDATED: 9 triples (was 4)
+  'Grizzly': { v: 1, d: 9, b: 10, t: 19 },  // UPDATED: 10 bulls, 19 triples
   'Hitman': { v: 3, d: 7, b: 24, t: 10 },
-  'Joker': { v: 4, d: 6, b: 14, t: 20 },
-  'Maverick': { v: 3, d: 0, b: 0, t: 0 },  // Partial data in photo
-  'Maxson Dart': { v: 0, d: 0, b: 10, t: 13 },  // From photo: 0 victories visible
+  'Joker': { v: 4, d: 6, b: 18, t: 20 },  // UPDATED: 18 bulls
+  'Maverick': { v: 3, d: 0, b: 0, t: 0 },
+  'Maxson Dart': { v: 0, d: 10, b: 13, t: 12 },  // UPDATED: 10 losses, 13 bulls, 12 triples
   'Moneymaker': { v: 6, d: 4, b: 23, t: 18 },
   'Phoenix': { v: 5, d: 5, b: 18, t: 19 },
   'Rook': { v: 7, d: 3, b: 29, t: 24 },
-  'Russe': { v: 4, d: 6, b: 12, t: 8 },
+  'Russe': { v: 4, d: 6, b: 12, t: 18 },  // UPDATED: 18 triples
   'Sniper': { v: 3, d: 7, b: 12, t: 20 },
   'Steelman': { v: 6, d: 4, b: 24, t: 21 },
   'Tank': { v: 9, d: 1, b: 30, t: 22 },
   'Thunder': { v: 7, d: 3, b: 38, t: 17 },
-  'Venom': { v: 3, d: 0, b: 0, t: 0 }  // Partial data
+  'Venom': { v: 3, d: 0, b: 0, t: 0 }
 };
 
-// Event 2: February 6, 2025 - 16 players participated
+// Event 2: February 6, 2026 - 16 players participated
+// UPDATED with corrected stats
 const event2Stats: Record<string, { v: number; d: number; b: number; t: number } | null> = {
   'Albatros': { v: 10, d: 0, b: 33, t: 28 },
-  'Bagheera': null,  // Absent - 3 points
+  'Bagheera': { v: 1, d: 9, b: 8, t: 20 },  // UPDATED: Was absent, now has stats
   'Bogey': { v: 2, d: 8, b: 8, t: 12 },
   'Captain': { v: 8, d: 2, b: 31, t: 24 },
   'Cobra Kai': { v: 9, d: 1, b: 31, t: 24 },
   'Dart Gangster': { v: 1, d: 9, b: 20, t: 19 },
-  'Grizzly': null,  // Absent - 3 points
+  'Grizzly': { v: 1, d: 9, b: 14, t: 14 },  // UPDATED: Was absent, now has stats
   'Hitman': null,  // Absent - 3 points
   'Joker': { v: 5, d: 5, b: 16, t: 12 },
   'Maverick': { v: 6, d: 4, b: 24, t: 15 },
   'Maxson Dart': { v: 1, d: 9, b: 12, t: 14 },
-  'Moneymaker': { v: 8, d: 2, b: 29, t: 26 },
+  'Moneymaker': { v: 6, d: 4, b: 29, t: 26 },
   'Phoenix': { v: 6, d: 4, b: 25, t: 17 },
   'Rook': { v: 7, d: 3, b: 29, t: 18 },
   'Russe': { v: 4, d: 6, b: 20, t: 17 },
@@ -110,10 +112,14 @@ export async function seed() {
 
   const createdEvents = [];
   for (const eventData of allEvents) {
+    // Parse date as local time at 7:00 PM EST
+    const [year, month, day] = eventData.date.split('-').map(Number);
+    const eventDate = new Date(year, month - 1, day, 19, 0, 0);
+    
     const [event] = await db.insert(events).values({
       type: eventData.type as 'saison-solo' | 'saison-equipe' | 'tournois-solo' | 'tournois-equipe' | 'celebration',
-      date: new Date(eventData.date),
-      season: '2024-2025',
+      date: eventDate,
+      season: '2026',
       description: eventData.description,
     }).returning();
     createdEvents.push(event);

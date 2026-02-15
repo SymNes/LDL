@@ -6,8 +6,12 @@ import { Header } from "@/components/header";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ligue des Légendes - Darts",
+  title: "Les Légendes - Ligue de Darts",
   description: "Site officiel de la Ligue des Légendes - Compétition de fléchettes",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

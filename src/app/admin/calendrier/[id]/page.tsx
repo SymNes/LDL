@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Save, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const eventTypes = [
   { value: "saison-solo", label: "Saison Solo" },
@@ -24,9 +35,15 @@ const eventTypes = [
   { value: "celebration", label: "Célébration" },
 ];
 
-export default function NewEventPage() {
+interface EditEventPageProps {
+  params: { id: string };
+}
+
+export default function EditEventPage({ params }: EditEventPageProps) {
   const router = useRouter();
+  const eventId = params.id;
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     type: "",
@@ -35,14 +52,29 @@ export default function NewEventPage() {
     description: "",
   });
 
+  // Load event data
+  useState(() => {
+    fetch(`/api/events/${eventId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setFormData({
+          type: data.type,
+          date: new Date(data.date).toISOString().split("T")[0],
+          season: data.season,
+          description: data.description || "",
+        });
+      })
+      .catch(() => setError("Erreur lors du chargement de l'événement"));
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch("/api/events", {
-        method: "POST",
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
@@ -61,6 +93,27 @@ export default function NewEventPage() {
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        router.push("/admin/calendrier");
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setError(data.error || "Une erreur est survenue");
+      }
+    } catch {
+      setError("Erreur de connexion");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Link href="/admin/calendrier">
@@ -74,7 +127,7 @@ export default function NewEventPage() {
         <CardHeader className="bg-gradient-to-r from-ldl-navy to-blue-800 text-white">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Nouvel Événement
+            Modifier l&apos;Événement
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -150,6 +203,40 @@ export default function NewEventPage() {
                 <Save className="w-4 h-4 mr-2" />
                 {loading ? "Enregistrement..." : "Enregistrer"}
               </Button>
+            </div>
+
+            <div className="pt-4 border-t">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer l&apos;événement
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible. Cela supprimera définitivement l&apos;événement
+                      et toutes les statistiques associées.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={deleting}
+                    >
+                      {deleting ? "Suppression..." : "Supprimer"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </form>
         </CardContent>

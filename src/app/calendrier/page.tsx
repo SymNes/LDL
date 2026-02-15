@@ -1,4 +1,5 @@
-import { Calendar, Trophy, Users, PartyPopper } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Trophy, Users, PartyPopper, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAllEvents, getAllSeasons } from "@/lib/db/queries";
 
@@ -17,6 +18,20 @@ function formatDate(date: Date) {
     month: "long",
     day: "numeric",
   }).format(date);
+}
+
+function isEventPast(date: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
+function isEventToday(date: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(date);
+  eventDate.setHours(0, 0, 0, 0);
+  return eventDate.getTime() === today.getTime();
 }
 
 export default async function CalendrierPage() {
@@ -53,33 +68,63 @@ export default async function CalendrierPage() {
                   color: "bg-gray-500",
                 };
                 const Icon = eventType.icon;
+                const isPast = isEventPast(event.date);
+                const isToday = isEventToday(event.date);
 
                 return (
-                  <Card
-                    key={event.id}
-                    className="hover:shadow-lg transition-shadow border-0 shadow-md"
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-start gap-4">
-                        <div className={`${eventType.color} p-3 rounded-xl shrink-0`}>
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-ldl-navy mb-1">
-                            {eventType.label}
-                          </h3>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {formatDate(event.date)}
-                          </p>
-                          {event.description && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {event.description}
+                  <Link key={event.id} href={`/calendrier/${event.id}`}>
+                    <Card
+                      className={`hover:shadow-lg transition-all border-0 shadow-md cursor-pointer group ${
+                        isPast ? "opacity-75" : ""
+                      } ${isToday ? "ring-2 ring-ldl-red" : ""}`}
+                    >
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-4">
+                          <div className={`${eventType.color} p-3 rounded-xl shrink-0 relative`}>
+                            <Icon className="w-5 h-5 text-white" />
+                            {isPast && (
+                              <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            {isToday && (
+                              <div className="absolute -top-1 -right-1 bg-ldl-red rounded-full p-0.5 animate-pulse">
+                                <Clock className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold text-ldl-navy mb-1">
+                                {eventType.label}
+                              </h3>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <p className={`text-sm capitalize ${isPast ? "text-muted-foreground" : "text-ldl-navy font-medium"}`}>
+                              {formatDate(event.date)}
                             </p>
-                          )}
+                            {isPast && (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-600 mt-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Terminé
+                              </span>
+                            )}
+                            {isToday && (
+                              <span className="inline-flex items-center gap-1 text-xs text-ldl-red font-semibold mt-1">
+                                <Clock className="w-3 h-3" />
+                                Aujourd&apos;hui
+                              </span>
+                            )}
+                            {event.description && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                {event.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 );
               })}
             </div>

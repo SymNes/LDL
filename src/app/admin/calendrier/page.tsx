@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getAllEvents } from "@/lib/db/queries";
@@ -64,12 +64,11 @@ export default async function AdminEventsPage() {
                     <td className="p-4">{event.season}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Link href={`/admin/calendrier/${event.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </td>
                   </tr>

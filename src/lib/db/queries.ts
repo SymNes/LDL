@@ -9,11 +9,17 @@ export async function getTopPlayersByPoints(limit: number = 3) {
       playerName: players.name,
       photoUrl: players.photoUrl,
       totalPoints: sql<number>`sum(${stats.points})`.as("totalPoints"),
+      totalBullseyes: sql<number>`sum(${stats.bullseyes})`.as("totalBullseyes"),
+      totalTriples: sql<number>`sum(${stats.triples})`.as("totalTriples"),
     })
     .from(players)
     .leftJoin(stats, eq(players.id, stats.playerId))
     .groupBy(players.id, players.name, players.photoUrl)
-    .orderBy(desc(sql`totalPoints`))
+    .orderBy(
+      desc(sql`totalPoints`),
+      desc(sql`totalBullseyes`),
+      desc(sql`totalTriples`)
+    )
     .limit(limit);
 
   return result;
@@ -88,7 +94,7 @@ export async function getAllEvents() {
   return db
     .select()
     .from(events)
-    .orderBy(desc(events.date));
+    .orderBy(events.date);
 }
 
 export async function getEventsBySeason(season: string) {
@@ -96,7 +102,7 @@ export async function getEventsBySeason(season: string) {
     .select()
     .from(events)
     .where(eq(events.season, season))
-    .orderBy(desc(events.date));
+    .orderBy(events.date);
 }
 
 export async function getAllSeasons() {
@@ -111,7 +117,29 @@ export async function getAllSeasons() {
 
 export async function getCurrentSeason() {
   const seasons = await getAllSeasons();
-  return seasons[0] || "2024-2025";
+  return seasons[0] || "2026";
+}
+
+export async function getNextEvent() {
+  const now = new Date();
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(sql`${events.date} > ${now}`)
+    .orderBy(events.date)
+    .limit(1);
+  return event;
+}
+
+export async function getLastEvent() {
+  const now = new Date();
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(sql`${events.date} <= ${now}`)
+    .orderBy(desc(events.date))
+    .limit(1);
+  return event;
 }
 
 export async function getRankingsBySeason(season: string) {
@@ -131,5 +159,40 @@ export async function getRankingsBySeason(season: string) {
     .leftJoin(events, eq(stats.eventId, events.id))
     .where(eq(events.season, season))
     .groupBy(players.id, players.name, players.photoUrl)
-    .orderBy(desc(sql`totalPoints`));
+    .orderBy(
+      desc(sql`totalPoints`),
+      desc(sql`totalBullseyes`),
+      desc(sql`totalTriples`)
+    );
+}
+
+export async function getEventById(id: number) {
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(eq(events.id, id))
+    .limit(1);
+  return event;
+}
+
+export async function getEventStats(eventId: number) {
+  return db
+    .select({
+      playerId: players.id,
+      playerName: players.name,
+      photoUrl: players.photoUrl,
+      points: stats.points,
+      wins: stats.wins,
+      losses: stats.losses,
+      bullseyes: stats.bullseyes,
+      triples: stats.triples,
+    })
+    .from(stats)
+    .innerJoin(players, eq(stats.playerId, players.id))
+    .where(eq(stats.eventId, eventId))
+    .orderBy(
+      desc(stats.points),
+      desc(stats.bullseyes),
+      desc(stats.triples)
+    );
 }
