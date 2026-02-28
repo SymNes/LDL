@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trophy, Save, CheckCircle } from "lucide-react";
+import { Trophy, Save, CheckCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,17 +25,32 @@ interface Event {
   description: string | null;
 }
 
+interface Stat {
+  id: number;
+  playerId: number;
+  eventId: number;
+  points: number;
+  wins: number;
+  losses: number;
+  bullseyes: number;
+  triples: number;
+}
+
 export default function AdminStatsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string>("");
+  const [existingStats, setExistingStats] = useState<Stat[]>([]);
   const [stats, setStats] = useState<Record<number, {
+    id?: number;
+    points: number;
     wins: number;
     losses: number;
     bullseyes: number;
     triples: number;
   }>>({});
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -48,6 +63,47 @@ export default function AdminStatsPage() {
       .then((res) => res.json())
       .then((data) => setEvents(data));
   }, []);
+
+  // Fetch existing stats when event is selected
+  useEffect(() => {
+    if (!selectedEvent) {
+      setExistingStats([]);
+      setStats({});
+      return;
+    }
+
+    setLoading(true);
+    fetch(`/api/stats?eventId=${selectedEvent}`)
+      .then((res) => res.json())
+      .then((data: Stat[]) => {
+        setExistingStats(data);
+        
+        // Initialize stats from existing data
+        const statsMap: Record<number, {
+          id?: number;
+          points: number;
+          wins: number;
+          losses: number;
+          bullseyes: number;
+          triples: number;
+        }> = {};
+        
+        data.forEach((stat) => {
+          statsMap[stat.playerId] = {
+            id: stat.id,
+            points: stat.points,
+            wins: stat.wins,
+            losses: stat.losses,
+            bullseyes: stat.bullseyes,
+            triples: stat.triples,
+          };
+        });
+        
+        setStats(statsMap);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [selectedEvent]);
 
   const handleStatChange = (playerId: number, field: string, value: number) => {
     setStats((prev) => ({
@@ -62,23 +118,22 @@ export default function AdminStatsPage() {
   const handleSubmit = async () => {
     if (!selectedEvent) return;
 
-    setLoading(true);
+    setSaving(true);
     setSuccess(false);
 
     try {
       const eventId = parseInt(selectedEvent);
       
-      // Submit stats for each player
+      // Submit/update stats for each player
       for (const [playerIdStr, playerStats] of Object.entries(stats)) {
         const playerId = parseInt(playerIdStr);
         
-        await fetch("/api/stats", {
-          method: "POST",
+        // Use PUT to either create or update
+        await fetch(`/api/stats?playerId=${playerId}&eventId=${eventId}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            playerId,
-            eventId,
-            points: playerStats.wins,
+            points: playerStats.points,
             wins: playerStats.wins,
             losses: playerStats.losses,
             bullseyes: playerStats.bullseyes,
@@ -88,11 +143,34 @@ export default function AdminStatsPage() {
       }
 
       setSuccess(true);
-      setStats({});
+      // Refresh stats
+      const res = await fetch(`/api/stats?eventId=${selectedEvent}`);
+      const data: Stat[] = await res.json();
+      setExistingStats(data);
+      
+      const statsMap: Record<number, {
+        id?: number;
+        points: number;
+        wins: number;
+        losses: number;
+        bullseyes: number;
+        triples: number;
+      }> = {};
+      data.forEach((stat) => {
+        statsMap[stat.playerId] = {
+          id: stat.id,
+          points: stat.points,
+          wins: stat.wins,
+          losses: stat.losses,
+          bullseyes: stat.bullseyes,
+          triples: stat.triples,
+        };
+      });
+      setStats(statsMap);
     } catch (error) {
       console.error("Error saving stats:", error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -103,7 +181,7 @@ export default function AdminStatsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ldl-navy">Saisie des Résultats</h1>
         <p className="text-muted-foreground">
-          Entrez les statistiques pour une soirée
+          Entrez ou modifiez les statistiques pour une soirée
         </p>
       </div>
 
@@ -147,7 +225,15 @@ export default function AdminStatsPage() {
       {selectedEvent && (
         <Card className="border-0 shadow-xl">
           <CardHeader className="bg-slate-50 border-b">
-            <CardTitle>Statistiques des Joueurs</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Statistiques des Joueurs
+              {existingStats.length > 0 && (
+                <span className="text-sm font-normal text-green-600 ml-2">
+                  (données existantes chargées)
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -155,8 +241,9 @@ export default function AdminStatsPage() {
                 <thead className="bg-slate-50 border-b">
                   <tr>
                     <th className="text-left p-4 font-bold">Joueur</th>
-                    <th className="text-center p-4 font-bold">Victoires (V)</th>
-                    <th className="text-center p-4 font-bold">Défaites (D)</th>
+                    <th className="text-center p-4 font-bold text-ldl-red">Points</th>
+                    <th className="text-center p-4 font-bold">V</th>
+                    <th className="text-center p-4 font-bold">D</th>
                     <th className="text-center p-4 font-bold">Bulls (B)</th>
                     <th className="text-center p-4 font-bold">Triples (T)</th>
                   </tr>
@@ -169,8 +256,19 @@ export default function AdminStatsPage() {
                         <Input
                           type="number"
                           min="0"
-                          className="w-20 mx-auto text-center"
-                          value={stats[player.id]?.wins || 0}
+                          className="w-20 mx-auto text-center font-bold text-ldl-red"
+                          value={stats[player.id]?.points ?? 0}
+                          onChange={(e) =>
+                            handleStatChange(player.id, "points", parseInt(e.target.value) || 0)
+                          }
+                        />
+                      </td>
+                      <td className="p-4">
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-16 mx-auto text-center"
+                          value={stats[player.id]?.wins ?? 0}
                           onChange={(e) =>
                             handleStatChange(player.id, "wins", parseInt(e.target.value) || 0)
                           }
@@ -180,8 +278,8 @@ export default function AdminStatsPage() {
                         <Input
                           type="number"
                           min="0"
-                          className="w-20 mx-auto text-center"
-                          value={stats[player.id]?.losses || 0}
+                          className="w-16 mx-auto text-center"
+                          value={stats[player.id]?.losses ?? 0}
                           onChange={(e) =>
                             handleStatChange(player.id, "losses", parseInt(e.target.value) || 0)
                           }
@@ -191,8 +289,8 @@ export default function AdminStatsPage() {
                         <Input
                           type="number"
                           min="0"
-                          className="w-20 mx-auto text-center"
-                          value={stats[player.id]?.bullseyes || 0}
+                          className="w-16 mx-auto text-center"
+                          value={stats[player.id]?.bullseyes ?? 0}
                           onChange={(e) =>
                             handleStatChange(player.id, "bullseyes", parseInt(e.target.value) || 0)
                           }
@@ -202,8 +300,8 @@ export default function AdminStatsPage() {
                         <Input
                           type="number"
                           min="0"
-                          className="w-20 mx-auto text-center"
-                          value={stats[player.id]?.triples || 0}
+                          className="w-16 mx-auto text-center"
+                          value={stats[player.id]?.triples ?? 0}
                           onChange={(e) =>
                             handleStatChange(player.id, "triples", parseInt(e.target.value) || 0)
                           }
@@ -225,11 +323,20 @@ export default function AdminStatsPage() {
 
               <Button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={saving}
                 className="w-full md:w-auto bg-ldl-green hover:bg-green-700"
               >
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? "Enregistrement..." : "Enregistrer les résultats"}
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Enregistrer les résultats
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

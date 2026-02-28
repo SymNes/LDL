@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Calendar, Trophy, Users, PartyPopper, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAllEvents, getAllSeasons } from "@/lib/db/queries";
+import { getAllEvents, getAllSeasons, getCompletedEventIds } from "@/lib/db/queries";
 
 const eventTypeLabels: Record<string, { label: string; icon: typeof Trophy; color: string }> = {
   "saison-solo": { label: "Saison Solo", icon: Trophy, color: "bg-ldl-red" },
@@ -11,31 +11,48 @@ const eventTypeLabels: Record<string, { label: string; icon: typeof Trophy; colo
   "celebration": { label: "Célébration", icon: PartyPopper, color: "bg-purple-600" },
 };
 
-function formatDate(date: Date) {
+function formatDate(dateInput: Date | string) {
+  // Handle both Date objects and ISO strings
+  const date = new Date(dateInput);
+
+  // Get the date components directly to avoid timezone issues
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Create a date at local noon to display correctly
+  const localDate = new Date(year, month, day);
+
   return new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(date);
+  }).format(localDate);
 }
 
-function isEventPast(date: Date): boolean {
+function isEventToday(dateInput: Date | string): boolean {
+  const date = new Date(dateInput);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return date < today;
-}
 
-function isEventToday(date: Date): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const eventDate = new Date(date);
-  eventDate.setHours(0, 0, 0, 0);
-  return eventDate.getTime() === today.getTime();
+  // Get date components to avoid timezone shift
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const eventDay = new Date(year, month, day);
+
+  return eventDay.getTime() === today.getTime();
 }
 
 export default async function CalendrierPage() {
-  const [events, seasons] = await Promise.all([getAllEvents(), getAllSeasons()]);
+  const [events, seasons, completedEventIds] = await Promise.all([
+    getAllEvents(),
+    getAllSeasons(),
+    getCompletedEventIds()
+  ]);
+
+  const completedSet = new Set(completedEventIds);
 
   // Group events by season
   const eventsBySeason = seasons.map((season) => ({
@@ -68,21 +85,20 @@ export default async function CalendrierPage() {
                   color: "bg-gray-500",
                 };
                 const Icon = eventType.icon;
-                const isPast = isEventPast(event.date);
+                const isCompleted = completedSet.has(event.id);
                 const isToday = isEventToday(event.date);
 
                 return (
                   <Link key={event.id} href={`/calendrier/${event.id}`}>
                     <Card
-                      className={`hover:shadow-lg transition-all border-0 shadow-md cursor-pointer group ${
-                        isPast ? "opacity-75" : ""
-                      } ${isToday ? "ring-2 ring-ldl-red" : ""}`}
+                      className={`hover:shadow-lg transition-all border-0 shadow-md cursor-pointer group ${isCompleted ? "opacity-75" : ""
+                        } ${isToday ? "ring-2 ring-ldl-red" : ""}`}
                     >
                       <CardContent className="p-5">
                         <div className="flex items-start gap-4">
                           <div className={`${eventType.color} p-3 rounded-xl shrink-0 relative`}>
                             <Icon className="w-5 h-5 text-white" />
-                            {isPast && (
+                            {isCompleted && (
                               <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
                                 <CheckCircle2 className="w-3 h-3 text-white" />
                               </div>
@@ -100,10 +116,10 @@ export default async function CalendrierPage() {
                               </h3>
                               <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <p className={`text-sm capitalize ${isPast ? "text-muted-foreground" : "text-ldl-navy font-medium"}`}>
+                            <p className={`text-sm capitalize ${isCompleted ? "text-muted-foreground" : "text-ldl-navy font-medium"}`}>
                               {formatDate(event.date)}
                             </p>
-                            {isPast && (
+                            {isCompleted && (
                               <span className="inline-flex items-center gap-1 text-xs text-green-600 mt-1">
                                 <CheckCircle2 className="w-3 h-3" />
                                 Terminé

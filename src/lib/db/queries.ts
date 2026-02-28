@@ -2,7 +2,8 @@ import { db } from "./index";
 import { players, events, stats } from "./schema";
 import { eq, desc, sql } from "drizzle-orm";
 
-export async function getTopPlayersByPoints(limit: number = 3) {
+// Single query to get all top players at once (more efficient)
+export async function getAllTopPlayers() {
   const result = await db
     .select({
       playerId: players.id,
@@ -14,12 +15,33 @@ export async function getTopPlayersByPoints(limit: number = 3) {
     })
     .from(players)
     .leftJoin(stats, eq(players.id, stats.playerId))
+    .groupBy(players.id, players.name, players.photoUrl);
+
+  // Sort and get top 3 for each category
+  const sortedByPoints = [...result].sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+  const sortedByBullseyes = [...result].sort((a, b) => (b.totalBullseyes || 0) - (a.totalBullseyes || 0));
+  const sortedByTriples = [...result].sort((a, b) => (b.totalTriples || 0) - (a.totalTriples || 0));
+
+  return {
+    topPoints: sortedByPoints.slice(0, 3),
+    topBullseyes: sortedByBullseyes.slice(0, 3),
+    topTriples: sortedByTriples.slice(0, 3),
+  };
+}
+
+// Keep individual functions for specific needs
+export async function getTopPlayersByPoints(limit: number = 3) {
+  const result = await db
+    .select({
+      playerId: players.id,
+      playerName: players.name,
+      photoUrl: players.photoUrl,
+      totalPoints: sql<number>`sum(${stats.points})`.as("totalPoints"),
+    })
+    .from(players)
+    .leftJoin(stats, eq(players.id, stats.playerId))
     .groupBy(players.id, players.name, players.photoUrl)
-    .orderBy(
-      desc(sql`totalPoints`),
-      desc(sql`totalBullseyes`),
-      desc(sql`totalTriples`)
-    )
+    .orderBy(desc(sql`totalPoints`))
     .limit(limit);
 
   return result;
@@ -97,6 +119,15 @@ export async function getAllEvents() {
     .orderBy(events.date);
 }
 
+// Get events that have stats (completed events)
+export async function getCompletedEventIds() {
+  const result = await db
+    .select({ eventId: stats.eventId })
+    .from(stats)
+    .groupBy(stats.eventId);
+  return result.map(r => r.eventId);
+}
+
 export async function getEventsBySeason(season: string) {
   return db
     .select()
@@ -115,9 +146,18 @@ export async function getAllSeasons() {
   return result.map(r => r.season);
 }
 
+// Returns both current season and all seasons in one query
+export async function getSeasonsInfo() {
+  const seasons = await getAllSeasons();
+  return {
+    currentSeason: seasons[0] || "2024-2025",
+    seasons,
+  };
+}
+
 export async function getCurrentSeason() {
   const seasons = await getAllSeasons();
-  return seasons[0] || "2026";
+  return seasons[0] || "2024-2025";
 }
 
 export async function getNextEvent() {

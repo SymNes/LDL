@@ -12,12 +12,19 @@ const eventTypeLabels: Record<string, string> = {
   "celebration": "Célébration",
 };
 
-function formatDate(date: Date) {
+function formatDate(dateInput: Date | string) {
+  const date = new Date(dateInput);
+  // Get date components directly to avoid timezone shift
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const localDate = new Date(year, month, day);
+  
   return new Intl.DateTimeFormat("fr-FR", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(date);
+  }).format(localDate);
 }
 
 export default async function AdminEventsPage() {

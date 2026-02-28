@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Save, Trash2 } from "lucide-react";
@@ -15,17 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 const eventTypes = [
   { value: "saison-solo", label: "Saison Solo" },
@@ -35,45 +24,54 @@ const eventTypes = [
   { value: "celebration", label: "Célébration" },
 ];
 
-interface EditEventPageProps {
-  params: { id: string };
-}
-
-export default function EditEventPage({ params }: EditEventPageProps) {
+export default function EditEventPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const eventId = params.id;
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     type: "",
     date: "",
-    season: "2026",
+    season: "2024-2025",
     description: "",
   });
 
-  // Load event data
-  useState(() => {
-    fetch(`/api/events/${eventId}`)
+  useEffect(() => {
+    // Fetch the event data
+    fetch(`/api/events?id=${params.id}`)
       .then((res) => res.json())
       .then((data) => {
-        setFormData({
-          type: data.type,
-          date: new Date(data.date).toISOString().split("T")[0],
-          season: data.season,
-          description: data.description || "",
-        });
+        if (data && data.length > 0) {
+          const event = data[0];
+          // Format date as YYYY-MM-DD for input (use the raw date string to avoid timezone shift)
+          const dateObj = new Date(event.date);
+          const year = dateObj.getFullYear();
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          
+          setFormData({
+            type: event.type,
+            date: `${year}-${month}-${day}`,
+            season: event.season,
+            description: event.description || "",
+          });
+        }
+        setLoading(false);
       })
-      .catch(() => setError("Erreur lors du chargement de l'événement"));
-  });
+      .catch(() => {
+        setError("Erreur de chargement");
+        setLoading(false);
+      });
+  }, [params.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events?id=${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -89,14 +87,16 @@ export default function EditEventPage({ params }: EditEventPageProps) {
     } catch {
       setError("Erreur de connexion");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet événement ?")) return;
+    
     setDeleting(true);
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
+      const response = await fetch(`/api/events?id=${params.id}`, {
         method: "DELETE",
       });
 
@@ -104,8 +104,7 @@ export default function EditEventPage({ params }: EditEventPageProps) {
         router.push("/admin/calendrier");
         router.refresh();
       } else {
-        const data = await response.json();
-        setError(data.error || "Une erreur est survenue");
+        setError("Erreur lors de la suppression");
       }
     } catch {
       setError("Erreur de connexion");
@@ -113,6 +112,14 @@ export default function EditEventPage({ params }: EditEventPageProps) {
       setDeleting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p>Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -127,7 +134,7 @@ export default function EditEventPage({ params }: EditEventPageProps) {
         <CardHeader className="bg-gradient-to-r from-ldl-navy to-blue-800 text-white">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Modifier l&apos;Événement
+            Modifier l&apos;événement
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -168,7 +175,7 @@ export default function EditEventPage({ params }: EditEventPageProps) {
                 id="season"
                 value={formData.season}
                 onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                placeholder="2026"
+                placeholder="2024-2025"
                 required
               />
             </div>
@@ -190,6 +197,16 @@ export default function EditEventPage({ params }: EditEventPageProps) {
             )}
 
             <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleting ? "Suppression..." : "Supprimer"}
+              </Button>
               <Link href="/admin/calendrier" className="flex-1">
                 <Button type="button" variant="outline" className="w-full">
                   Annuler
@@ -198,45 +215,11 @@ export default function EditEventPage({ params }: EditEventPageProps) {
               <Button
                 type="submit"
                 className="flex-1 bg-ldl-navy hover:bg-blue-900"
-                disabled={loading}
+                disabled={saving}
               >
                 <Save className="w-4 h-4 mr-2" />
-                {loading ? "Enregistrement..." : "Enregistrer"}
+                {saving ? "Enregistrement..." : "Enregistrer"}
               </Button>
-            </div>
-
-            <div className="pt-4 border-t">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Supprimer l&apos;événement
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cette action est irréversible. Cela supprimera définitivement l&apos;événement
-                      et toutes les statistiques associées.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-red-600 hover:bg-red-700"
-                      disabled={deleting}
-                    >
-                      {deleting ? "Suppression..." : "Supprimer"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
           </form>
         </CardContent>

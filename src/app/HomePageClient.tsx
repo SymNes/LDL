@@ -4,14 +4,6 @@ import Link from "next/link";
 import { Trophy, Calendar, Users, Target, TrendingUp, Award } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface Event {
-  id: number;
-  type: string;
-  date: Date;
-  season: string;
-  description: string | null;
-}
-
 interface TopPointsPlayer {
   playerId: number;
   playerName: string;
@@ -36,8 +28,6 @@ interface HomePageClientProps {
   topPoints: TopPointsPlayer[];
   topBullseyes: TopBullseyesPlayer[];
   topTriples: TopTriplesPlayer[];
-  nextEvent: Event | null;
-  lastEvent: Event | null;
 }
 
 export default function HomePageClient({

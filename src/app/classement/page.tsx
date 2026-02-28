@@ -1,4 +1,4 @@
-import { getAllSeasons, getCurrentSeason, getRankingsBySeason } from "@/lib/db/queries";
+import { getSeasonsInfo, getRankingsBySeason } from "@/lib/db/queries";
 import ClassementPageClient from "./ClassementPageClient";
 
 interface ClassementPageProps {
@@ -6,8 +6,7 @@ interface ClassementPageProps {
 }
 
 export default async function ClassementPage({ searchParams }: ClassementPageProps) {
-  const seasons = await getAllSeasons();
-  const currentSeason = await getCurrentSeason();
+  const { currentSeason, seasons } = await getSeasonsInfo();
   const selectedSeason = searchParams.saison || currentSeason;
   
   const rankings = await getRankingsBySeason(selectedSeason);
